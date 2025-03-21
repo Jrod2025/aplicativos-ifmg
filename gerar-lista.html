@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exportação de Dados</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #7FFFD4; /* Aquamarine para o fundo da página */
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white; /* Fundo branco para o conteúdo */
+            border-radius: 10px; /* Bordas arredondadas */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Sombra suave */
+        }
+        h2 {
+            color: white; /* Texto branco para contrastar com o fundo */
+            background-color: #006400; /* Darkgreen para o fundo do h2 */
+            padding: 15px; /* Espaçamento interno */
+            text-align: center; /* Centraliza o texto */
+            border-radius: 5px; /* Bordas arredondadas */
+        }
+        h6 {
+            color: #FF0000/* Texto vermelho para contrastar com o fundo */
+        }
+        .upload-box {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            background-color: #f9f9f9; /* Fundo claro para a área de upload */
+            border-radius: 5px; /* Bordas arredondadas */
+        }
+        .results {
+            margin-top: 20px;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+        .video-links {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .video-links a {
+            display: block;
+            margin-bottom: 10px;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .video-links a:hover {
+            text-decoration: underline;
+        }
+        #downloadLink {
+            display: block;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #006400; /* Darkgreen para o botão de download */
+            color: white; /* Texto branco */
+            text-align: center;
+            text-decoration: none;
+            border-radius: 5px; /* Bordas arredondadas */
+        }
+        #downloadLink:hover {
+            background-color: #004d00; /* Tom mais escuro de Darkgreen ao passar o mouse */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Lista de Credores - Exportação de Dados para macro Siafi Hod</h2>
+        <h6>Página criada por José Rodrigues - Contabilidade/Reitoria - IFMG - março/2025</h6>
+
+        <!-- Links para os vídeos de orientação -->
+        <div class="video-links">
+            <p>Orientações de uso:</p>
+            <a href="https://drive.google.com/file/d/1FcPK0uz2MQZx2J6WYsKvLlQgJA_4kd2S/view" target="_blank">▶ Vídeo 1: Criação de macro no Siafi</a>
+            <a href="https://drive.google.com/file/d/1t1U4Wnyu6V1rRdgVfc6XfB3hcmPlo_Bw/view" target="_blank">▶ Vídeo 2: Geração e exportação de dados para a macro</a>
+            <a href="https://drive.google.com/file/d/1aEgKJxeTvrOsPfHtZFGSpS_mqget9K9m/view" target="_blank">▶ Vídeo 3: Geração da Lista de Credores</a>
+        </div>
+
+        <div class="upload-box">
+            <p>Arraste e solte a planilha aqui ou clique para selecionar:</p>
+            <input type="file" id="fileInput" accept=".xlsx, .xls">
+        </div>
+        <div class="results" id="results">
+            <!-- Resultados serão exibidos aqui -->
+        </div>
+        <a id="downloadLink" style="display:none;">Baixar Arquivo TXT</a>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.innerHTML = '<p>Carregando e validando planilha...</p>'; // Mensagem de carregamento
+
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheetName = workbook.SheetNames[0]; // Pega a primeira planilha
+                        const sheet = workbook.Sheets[sheetName];
+
+                        // Obtém o intervalo de células preenchidas
+                        const range = XLSX.utils.decode_range(sheet['!ref']);
+                        resultsDiv.innerHTML = ''; // Limpa mensagem de carregamento
+
+                        let outputText = ''; // Armazena o texto formatado
+                        let lineCount = 0; // Contador de linhas
+                        let hasErrors = false; // Flag para verificar se há erros
+
+                        // Itera apenas sobre as linhas preenchidas
+                        for (let rowIndex = range.s.r + 1; rowIndex <= range.e.r; rowIndex++) {
+                            // Verifica se pelo menos uma das colunas de interesse está preenchida
+                            const cpfCell = sheet[XLSX.utils.encode_cell({ r: rowIndex, c: 2 })]; // Coluna C (2)
+                            const bancoCell = sheet[XLSX.utils.encode_cell({ r: rowIndex, c: 4 })]; // Coluna E (4)
+                            const agenciaCell = sheet[XLSX.utils.encode_cell({ r: rowIndex, c: 5 })]; // Coluna F (5)
+                            const contaCell = sheet[XLSX.utils.encode_cell({ r: rowIndex, c: 6 })]; // Coluna G (6)
+                            const valorCell = sheet[XLSX.utils.encode_cell({ r: rowIndex, c: 8 })]; // Coluna I (8)
+
+                            // Se todas as células estiverem vazias, pula a linha
+                            if (!cpfCell && !bancoCell && !agenciaCell && !contaCell && !valorCell) continue;
+
+                            // Converte os valores para strings (ou string vazia se a célula estiver vazia)
+                            const cpf = cpfCell ? String(cpfCell.v).replace(/[^\d]/g, '') : '';
+                            const banco = bancoCell ? String(bancoCell.v).replace(/[^\d]/g, '') : '';
+                            const agencia = agenciaCell ? String(agenciaCell.v).replace(/[^\d]/g, '') : '';
+                            const conta = contaCell ? String(contaCell.v).replace(/[^\d]/g, '') : '';
+                            let valor = valorCell ? String(valorCell.v) : '';
+
+                            // Validação do CPF
+                            if (!validarCPF(cpf)) {
+                                resultsDiv.innerHTML += `<p class="error">Erro na linha ${rowIndex + 1}: CPF "${cpf}" inválido.</p>`;
+                                hasErrors = true;
+                            }
+
+                            // Validação do Banco (3 dígitos)
+                            if (!banco || banco.length !== 3) {
+                                resultsDiv.innerHTML += `<p class="error">Erro na linha ${rowIndex + 1}: Banco "${banco}" deve ter exatamente 3 dígitos.</p>`;
+                                hasErrors = true;
+                            }
+
+                            // Validação da Agência (4 dígitos)
+                            if (!agencia || agencia.length !== 4) {
+                                resultsDiv.innerHTML += `<p class="error">Erro na linha ${rowIndex + 1}: Agência "${agencia}" deve ter exatamente 4 dígitos.</p>`;
+                                hasErrors = true;
+                            }
+
+                            // Validação da Conta (20 dígitos)
+                            if (!conta || conta.length > 20) {
+                                resultsDiv.innerHTML += `<p class="error">Erro na linha ${rowIndex + 1}: Conta "${conta}" deve ter até 20 dígitos.</p>`;
+                                hasErrors = true;
+                            }
+
+                            // Validação do Valor (17 dígitos)
+                            if (!valor || valor.length > 17) {
+                                resultsDiv.innerHTML += `<p class="error">Erro na linha ${rowIndex + 1}: Valor "${valor}" deve ter até 17 dígitos.</p>`;
+                                hasErrors = true;
+                            }
+
+                            // Se houver erros, interrompe o processamento
+                            if (hasErrors) continue;
+
+                            // Formata o valor (remove a vírgula e garante duas casas decimais)
+                            if (valor.includes(',')) {
+                                valor = valor.replace(',', ''); // Remove a vírgula
+                            } else if (valor.includes('.')) {
+                                valor = valor.replace('.', ''); // Remove o ponto (caso o Excel use ponto como separador decimal)
+                            } else {
+                                valor += '00'; // Adiciona duas casas decimais se não houver separador
+                            }
+
+                            // Formata os dados
+                            const cpfFormatado = cpf.padStart(11, '0'); // 11 dígitos
+                            const bancoFormatado = banco.padStart(3, '0'); // 3 dígitos
+                            const agenciaFormatada = agencia.padStart(4, '0'); // 4 dígitos
+                            const contaFormatada = conta.padStart(20, '0'); // 20 dígitos
+                            const valorFormatado = valor.padStart(17, '0'); // 17 dígitos
+
+                            // Adiciona a linha formatada ao texto de saída
+                            outputText += `${cpfFormatado}[tab]${bancoFormatado}${agenciaFormatada}${contaFormatada}${valorFormatado}`;
+
+                            // Incrementa o contador de linhas
+                            lineCount++;
+
+                            // Adiciona [enter]s[enter][enter][erinp] a cada 7 linhas (apenas na primeira página)
+                            if (lineCount % 7 === 0) {
+                                if (lineCount === 7) {
+                                    outputText += '[enter]s[enter][enter][erinp]'; // Primeira página
+                                } else {
+                                    outputText += '[enter]s[enter][erinp]'; // Páginas seguintes
+                                }
+                            }
+                        }
+
+                        // Se houver erros, não gera o arquivo
+                        if (hasErrors) {
+                            resultsDiv.innerHTML += `<p class="error">Corrija os erros antes de gerar o arquivo.</p>`;
+                            return;
+                        }
+
+                        // Adiciona [enter]s ao final do último registro
+                        // outputText += '[enter]s';   Estou tirando este comando para fazer teste. Será necessário teclar Enter e S na última  página.
+
+                        // Cria o arquivo TXT para download
+                        const blob = new Blob([outputText], { type: 'text/plain' });
+                        const url = URL.createObjectURL(blob);
+                        const downloadLink = document.getElementById('downloadLink');
+                        downloadLink.href = url;
+                        downloadLink.download = 'dados_exportados.txt';
+                        downloadLink.style.display = 'block';
+
+                        resultsDiv.innerHTML = '<p>Arquivo gerado com sucesso! Clique no link abaixo para baixar.</p>';
+                    } catch (error) {
+                        resultsDiv.innerHTML = `<p class="error">Erro ao processar a planilha: ${error.message}</p>`;
+                    }
+                };
+
+                reader.onerror = function() {
+                    resultsDiv.innerHTML = `<p class="error">Erro ao ler o arquivo. Certifique-se de que o arquivo é válido.</p>`;
+                };
+
+                reader.readAsArrayBuffer(file);
+            }
+        });
+
+        // Função para validar CPF
+        function validarCPF(cpf) {
+            if (!cpf) return false;
+            cpf = cpf.replace(/[^\d]/g, ''); // Remove caracteres não numéricos
+            if (cpf.length !== 11) return false;
+
+            // Verifica se todos os dígitos são iguais
+            if (/^(\d)\1{10}$/.test(cpf)) return false;
+
+            // Validação dos dígitos verificadores
+            let soma = 0;
+            for (let i = 0; i < 9; i++) {
+                soma += parseInt(cpf.charAt(i)) * (10 - i);
+            }
+            let resto = soma % 11;
+            let digito1 = resto < 2 ? 0 : 11 - resto;
+
+            soma = 0;
+            for (let i = 0; i < 10; i++) {
+                soma += parseInt(cpf.charAt(i)) * (11 - i);
+            }
+            resto = soma % 11;
+            let digito2 = resto < 2 ? 0 : 11 - resto;
+
+            return digito1 === parseInt(cpf.charAt(9)) && digito2 === parseInt(cpf.charAt(10));
+        }
+    </script>
+</body>
+</html>

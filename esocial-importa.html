@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório - Verificação eSocial</title>
+    <style>
+        h2 {
+            text-align: center;
+            color: darkgreen;
+            margin-bottom: 5px;
+        }
+        #fonte-dados, #data-consulta {
+            text-align: center;
+            font-style: italic;
+            margin-bottom: 5px;
+        }
+        #relatorio {
+            margin-top: 10px;
+            font-family: Arial, sans-serif;
+        }
+        .sucesso {
+            color: darkblue;
+        }
+        .inconsistencia {
+            color: red;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h2>VALIDAÇÃO CADASTRAL NO eSOCIAL</h2>
+    <p id="fonte-dados"></p>
+    <p id="data-consulta"></p>
+    <button onclick="importarArquivo()">Importar e Analisar Arquivo</button>
+    <button onclick="exportarParaPDF()">Exportar para PDF</button>
+    <ul id="inconsistencias"></ul>
+    <div id="relatorio"></div>
+
+    <input type="file" id="arquivo" style="display: none;" accept="*.PROCESSADO">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <script>
+        function importarArquivo() {
+            const input = document.getElementById("arquivo");
+            input.click();
+
+            input.onchange = function () {
+                const file = input.files[0];
+                if (!file) {
+                    alert("Nenhum arquivo selecionado!");
+                    return;
+                }
+
+                // Exibir o nome do arquivo como a fonte dos dados
+                const fonteDados = document.getElementById("fonte-dados");
+                fonteDados.textContent = `Arquivo: ${file.name}`;
+
+                // Extrair a data do nome do arquivo (assumindo o padrão seguido)
+                const matchData = file.name.match(/\d{8}/);
+                if (matchData) {
+                    const dataBruta = matchData[0];
+                    const dataFormatada = `${dataBruta.slice(6, 8)}/${dataBruta.slice(4, 6)}/${dataBruta.slice(0, 4)}`;
+                    const dataConsulta = document.getElementById("data-consulta");
+                    dataConsulta.textContent = `Data da consulta: ${dataFormatada}`;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const texto = e.target.result.trim();
+                    gerarRelatorio(texto);
+                };
+                reader.readAsText(file);
+            };
+        }
+
+        function gerarRelatorio(dados) {
+            const linhas = dados.split("\n");
+            const cabecalho = linhas[0].split(";");
+            const registros = linhas.slice(1);
+
+            const descricoes = [
+                "SITUAÇÕES:",
+                "==========",
+                "1- NIS INVÁLIDO",
+                "2- CPF INVÁLIDO",
+                "3- NOME INVÁLIDO",
+                "4- DATA DE NASCIMENTO INVÁLIDA",
+                "5- NIS INCONSISTENTE",
+                "6- DATA DE NASC. DIVERGE DA CADASTRADA NO NIS",
+                "7- NIS COM ÓBITO NO CNIS",
+                "8- CPF DIVERGENTE DO INFORMADO NO CNIS",
+                "9- CPF NÃO PREENCHIDO NO CNIS",
+                "10- CPF NÃO CONSTA NO CADASTRO CPF",
+                "11- CPF NULO NO CADASTRO CPF",
+                "12- CPF CANCELADO NO CADASTRO CPF",
+                "13- CPF SUSPENSO NO CADASTRO CPF",
+                "14- DATA NASC. DIVERGE CADASTRO CPF",
+                "15- NOME DIVERGE CADASTRO CPF",
+                "16- PROCURAR CONVENIADAS DA RFB",
+                "17- ATUALIZAR NIS NO INSS / VERIFICAR DADOS DIGITADOS"
+            ];
+
+            // Exibir descrições
+            const ul = document.getElementById("inconsistencias");
+            ul.innerHTML = "";
+            descricoes.forEach(descricao => {
+                const li = document.createElement("li");
+                li.textContent = descricao;
+                ul.appendChild(li);
+            });
+
+            // Processar registros
+            const relatorioDiv = document.getElementById("relatorio");
+            relatorioDiv.innerHTML = "<h2>RESULTADO DA CONSULTA:</h2>";
+
+            registros.forEach(linha => {
+                const colunas = linha.split(";");
+                const cpf = colunas[0];
+                const nis = colunas[1];
+                const nome = colunas[2];
+                const dn = colunas[3].replace(/(\d{2})(\d{2})(\d{4})/, "$1/$2/$3");
+
+                let inconsistencias = [];
+                for (let i = 4; i < colunas.length; i++) {
+                    if (colunas[i] === "1" || colunas[i] === "2") {
+                        inconsistencias.push(` ${i - 3}`);
+                    }
+                }
+
+                const resultado = inconsistencias.length > 0
+                    ? `PENDÊNCIAS: ${inconsistencias.join(", ")}.`
+                    : "VALIDAÇÃO OK!";
+
+                const paragrafo = document.createElement("p");
+                paragrafo.textContent = `CPF: ${cpf} - NIS: ${nis} - NOME: ${nome} - DN: ${dn} => ${resultado}`;
+                paragrafo.className = inconsistencias.length > 0 ? "inconsistencia" : "sucesso";
+                relatorioDiv.appendChild(paragrafo);
+            });
+        }
+
+function exportarParaPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // Definir o tamanho da fonte padrão para 8
+    doc.setFontSize(8);
+
+    // Título do relatório com fonte maior (12) e centralizado
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12); // Tamanho da fonte para o título
+    const pageWidth = doc.internal.pageSize.getWidth(); // Largura da página
+    doc.text("VALIDAÇÃO CADASTRAL NO eSOCIAL", pageWidth / 2, 10, { align: "center" });
+
+    // Voltar ao tamanho da fonte padrão (10) para o restante
+    doc.setFontSize(10);
+
+    // Fonte dos dados e data da consulta
+    const fonte = document.getElementById("fonte-dados").textContent;
+    const dataConsulta = document.getElementById("data-consulta").textContent;
+    doc.setFont("helvetica", "bold");
+    doc.text(fonte, 10, 20);
+    doc.text(dataConsulta, 10, 30);
+
+    // Voltar ao tamanho da fonte padrão (8) para o restante
+    doc.setFontSize(8);
+
+    // Adicionar a legenda
+    doc.setFont("helvetica", "bold");
+    doc.text("SITUAÇÕES:", 10, 40);
+    doc.text("------------------", 10, 42);
+
+    const descricoes = [
+        "1- NIS INVÁLIDO",
+        "2- CPF INVÁLIDO",
+        "3- NOME INVÁLIDO",
+        "4- DATA DE NASCIMENTO INVÁLIDA",
+        "5- NIS INCONSISTENTE",
+        "6- DATA DE NASC. DIVERGE DA CADASTRADA NO NIS",
+        "7- NIS COM ÓBITO NO CNIS",
+        "8- CPF DIVERGENTE DO INFORMADO NO CNIS",
+        "9- CPF NÃO PREENCHIDO NO CNIS",
+        "10- CPF NÃO CONSTA NO CADASTRO CPF",
+        "11- CPF NULO NO CADASTRO CPF",
+        "12- CPF CANCELADO NO CADASTRO CPF",
+        "13- CPF SUSPENSO NO CADASTRO CPF",
+        "14- DATA NASC. DIVERGE CADASTRO CPF",
+        "15- NOME DIVERGE CADASTRO CPF",
+        "16- PROCURAR CONVENIADAS DA RFB",
+        "17- ATUALIZAR NIS NO INSS / VERIFICAR DADOS DIGITADOS",
+        "                                                      ",
+        "_____________________________________________________________________________________________________________________"
+    ];
+
+    let y = 50; // Posição inicial para a legenda
+    descricoes.forEach(descricao => {
+        doc.text(descricao, 10, y);
+        y += 5; // Espaçamento entre as linhas da legenda
+    });
+
+    // Adicionar o resultado da consulta
+    doc.setFont("helvetica", "bold");
+    doc.text("RESULTADO DA CONSULTA:", 10, y );
+
+    const resultados = document.querySelectorAll("#relatorio p");
+    y += 8; // Posição inicial para os resultados
+
+    // Largura máxima da página (A4 tem 210mm de largura, menos margens)
+    const maxWidth = 190; // Largura máxima em unidades do jsPDF (ajuste conforme necessário)
+
+    resultados.forEach(paragrafo => {
+        const texto = paragrafo.textContent;
+
+        // Definir a cor do texto com base na classe do parágrafo
+        if (paragrafo.classList.contains("inconsistencia")) {
+            doc.setTextColor(255, 0, 0); // Vermelho para inconsistências
+        } else if (paragrafo.classList.contains("sucesso")) {
+            doc.setTextColor(0, 0, 255); // Azul para sucesso
+        }
+
+        // Dividir o texto em várias linhas, se necessário
+        const linhas = doc.splitTextToSize(texto, maxWidth);
+
+        // Adicionar cada linha ao PDF
+        linhas.forEach(linha => {
+            if (y > 280) { // Verificar se atingiu o final da página (A4 tem 297mm de altura)
+                doc.addPage(); // Adicionar uma nova página
+                y = 10; // Reiniciar a posição Y na nova página
+            }
+
+            doc.text(linha, 10, y);
+            y += 5; // Espaçamento entre as linhas
+        });
+
+        // Resetar a cor do texto para preto (padrão)
+        doc.setTextColor(0, 0, 0);
+    });
+
+    // Salvar o PDF
+    doc.save("relatorio_esocial.pdf");
+}
+    </script>
+</body>
+</html>
