@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulário de Dados para o eSocial</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #e0f7e0; /* Verde claro para o fundo da página */
+        }
+        .form-container {
+            max-width: 100%;
+            overflow-x: auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            background-color: #006400; /* Verde escuro para o fundo do título */
+            color: white; /* Letras brancas */
+            padding: 20px;
+            margin: 0;
+        }
+        .form-row {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+            flex-wrap: nowrap;
+            align-items: center;
+        }
+        .form-row label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+            font-size: 10px; /* Tamanho da fonte reduzido */
+        }
+        .form-row input, .form-row select {
+            padding: 8px;
+            flex: 1;
+            min-width: 100px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .form-row input[type="date"] {
+            width: 120px;
+        }
+        .form-row input[type="number"] {
+            width: 100px;
+        }
+        .form-row input[type="text"] {
+            max-width: 400px; /* Tamanho padrão para campos de texto */
+        }
+        /* Ajustes específicos para o campo CPF */
+        .form-row input[type="number"][maxlength="11"] {
+            max-width: 100px; /* Tamanho reduzido para o campo CPF */
+        }
+        /* Ajustes específicos para o campo CBO */
+        .form-row input[type="text"][maxlength="5"] {
+            max-width: 50px; /* Tamanho reduzido para o campo CBO */
+        }
+        /* Ajustes específicos para o campo "Nome Completo" */
+        .form-row input[type="text"][maxlength="70"] {
+            max-width: 600px; /* Tamanho aumentado para o campo "Nome Completo" */
+        }
+        /* Ajustes específicos para o campo "UG IFMG" */
+        .form-row input[type="text"][maxlength="6"] {
+            max-width: 70px; /* Tamanho reduzido para o campo "UG IFMG" */
+        }
+        .add-row-btn, .submit-btn, .undo-btn {
+            padding: 10px 20px;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .add-row-btn {
+            background-color: #28a745; /* Verde para o botão Adicionar Linha */
+        }
+        .add-row-btn:hover {
+            background-color: #218838; /* Verde mais escuro no hover */
+        }
+        .submit-btn {
+            background-color: #007bff; /* Azul para o botão Salvar Dados */
+        }
+        .submit-btn:hover {
+            background-color: #0056b3; /* Azul mais escuro no hover */
+        }
+        .undo-btn {
+            background-color: #dc3545; /* Vermelho para o botão Desfazer */
+            margin-left: 10px; /* Espaçamento entre os botões */
+        }
+        .undo-btn:hover {
+            background-color: #c82333; /* Vermelho mais escuro no hover */
+        }
+        .attention-message {
+            color: red;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .replicate-btn {
+            padding: 10px 20px;
+            background-color: #ffc107; /* Amarelo para o botão Replicar Dados */
+            color: black;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-left: 10px; /* Espaçamento entre os botões */
+        }
+    </style>
+    <!-- Inclua a biblioteca SheetJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="form-container">
+        <h1>Formulário de Dados para o eSocial</h1>
+        <p class="attention-message">
+            <strong>Atenção:</strong> Feche a planilha "DadoseSocial.xlsx" antes de salvar novos dados.
+        </p>
+        <form id="data-form">
+            <div id="form-rows">
+                <!-- Primeira linha com labels -->
+                <div class="form-row" id="first-row">
+                    <div>
+                        <label>UG IFMG</label>
+                        <input type="text" maxlength="6" class="ug-ifmg" required>
+                    </div>
+                    <div>
+                        <label>Contribuinte IFMG?</label>
+                        <select required>
+                            <option value="Sim">Sim</option>
+                            <option value="Não">Não</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Contribuinte MEI?</label>
+                        <select required>
+                            <option value="Sim">Sim</option>
+                            <option value="Não">Não</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>CPF</label>
+                        <input type="number" maxlength="11" class="cpf" required>
+                    </div>
+                    <div>
+                        <label>Nome Completo</label>
+                        <input type="text" maxlength="70" required>
+                    </div>
+                    <div>
+                        <label>Data de Nascimento</label>
+                        <input type="date" class="data-nascimento" required>
+                    </div>
+                    <div>
+                        <label>CBO</label>
+                        <input type="text" maxlength="5" required>
+                    </div>
+                    <div>
+                        <label>Valor Bruto</label>
+                        <input type="number" step="0.01" class="valor-bruto" required>
+                    </div>
+                    <div>
+                        <label>INSS</label>
+                        <input type="number" step="0.01" class="inss" readonly>
+                    </div>
+                    <div>
+                        <label>ISSQN</label>
+                        <input type="number" step="0.01" class="issqn">
+                    </div>
+                    <div>
+                        <label>IRRF</label>
+                        <input type="number" step="0.01" class="irrf">
+                    </div>
+                    <div>
+                        <label>Valor Líquido</label>
+                        <input type="number" step="0.01" class="valor-liquido" readonly>
+                    </div>
+                    <div>
+                        <label>INSS Patronal</label>
+                        <input type="number" step="0.01" class="inss-patronal" readonly>
+                    </div>
+                    <div>
+                        <label>Processo SEI DH</label>
+                        <input type="text" maxlength="17" class="processo-doc" required>
+                    </div>
+                    <div>
+                        <label>Processo SEI Pagamento</label>
+                        <input type="text" maxlength="17" class="processo-pag" required>
+                    </div>
+                    <div>
+                        <label>Documento Hábil-DH</label>
+                        <input type="text" maxlength="12" class="dh" required>
+                    </div>
+                    <div>
+                        <label>Data DH</label>
+                        <input type="date" class="data-dh" required>
+                    </div>
+                    <div>
+                        <label>Ordem Bancária-OB</label>
+                        <input type="text" maxlength="12" class="ob" required>
+                    </div>
+                    <div>
+                        <label>Data OB</label>
+                        <input type="date" class="data-ob" required>
+                    </div>
+                    <div>
+                        <label>CNPJ Empresa</label>
+                        <input type="text" maxlength="14">
+                    </div>
+                    <div>
+                        <label>Valor Remuneração</label>
+                        <input type="number" step="0.01">
+                    </div>
+                    <div>
+                        <label>CBO</label>
+                        <input type="text" maxlength="5">
+                    </div>
+                    <div>
+                        <label>CNPJ Empresa</label>
+                        <input type="text" maxlength="14">
+                    </div>
+                    <div>
+                        <label>Valor Remuneração</label>
+                        <input type="number" step="0.01">
+                    </div>
+                    <div>
+                        <label>CBO</label>
+                        <input type="text" maxlength="5">
+                    </div>
+                    <div>
+                        <label>CNPJ Empresa</label>
+                        <input type="text" maxlength="14">
+                    </div>
+                    <div>
+                        <label>Valor Remuneração</label>
+                        <input type="number" step="0.01">
+                    </div>
+                    <div>
+                        <label>CBO</label>
+                        <input type="text" maxlength="5">
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="add-row-btn" onclick="addRow()">Adicionar Linha</button>
+            <button type="button" class="undo-btn" onclick="undoLastRow()">Desfazer</button>
+            <button type="button" class="replicate-btn" id="replicate-btn" onclick="replicarDados()">Replicar Dados</button>
+            <button type="submit" class="submit-btn">Salvar Dados</button>
+        </form>
+    </div>
+
+    <script>
+        // Array para armazenar o histórico das linhas adicionadas
+        let rowHistory = [];
+
+        // Função para adicionar novas linhas
+        function addRow() {
+            const formRows = document.getElementById('form-rows');
+            const newRow = document.createElement('div');
+            newRow.className = 'form-row';
+            newRow.innerHTML = `
+                <div>
+                   <input type="text" maxlength="6" class="ug-ifmg" required>
+                </div>
+                <div>
+                    <select required>
+                        <option value="Sim">Sim</option>
+                        <option value="Não">Não</option>
+                    </select>
+                </div>
+                <div>
+                    <select required>
+                        <option value="Sim">Sim</option>
+                        <option value="Não">Não</option>
+                    </select>
+                </div>
+                <div>
+                    <input type="number" maxlength="11" class="cpf" required>
+                </div>
+                <div>
+                    <input type="text" maxlength="70" required>
+                </div>
+                <div>
+                    <input type="date" class="data-nascimento" required>
+                </div>
+                <div>
+                    <input type="text" maxlength="5" required>
+                </div>
+                <div>
+                    <input type="number" step="0.01" class="valor-bruto" required>
+                </div>
+                <div>
+                    <input type="number" step="0.01" class="inss" readonly>
+                </div>
+                <div>
+                    <input type="number" step="0.01" class="issqn">
+                </div>
+                <div>
+                    <input type="number" step="0.01" class="irrf">
+                </div>
+                <div>
+                    <input type="number" step="0.01" class="valor-liquido" readonly>
+                </div>
+                <div>
+                    <input type="number" step="0.01" class="inss-patronal" readonly>
+                </div>
+                <div>
+                   <input type="text" maxlength="17" class="processo-doc" required>
+                </div>
+                <div>
+                   <input type="text" maxlength="17" class="processo-pag" required> 
+                </div>
+                <div>
+                   <input type="text" maxlength="12" class="dh" required>
+                </div>
+                <div>
+                    <input type="date" class="data-dh" required>
+                </div>
+                <div>
+                    <input type="text" maxlength="12" class="ob" required>
+                </div>
+                <div>
+                    <input type="date" class="data-ob" required>
+                </div>
+                <div>
+                    <input type="text" maxlength="14">
+                </div>
+                <div>
+                    <input type="number" step="0.01">
+                </div>
+                <div>
+                    <input type="text" maxlength="5">
+                </div>
+                <div>
+                    <input type="text" maxlength="14">
+                </div>
+                <div>
+                    <input type="number" step="0.01">
+                </div>
+                <div>
+                    <input type="text" maxlength="5">
+                </div>
+                <div>
+                    <input type="text" maxlength="14">
+                </div>
+                <div>
+                    <input type="number" step="0.01">
+                </div>
+                <div>
+                    <input type="text" maxlength="5">
+                </div>
+            `;
+            formRows.appendChild(newRow);
+
+            // Adiciona a nova linha ao histórico
+            rowHistory.push(newRow);
+
+            // Adiciona os eventos de cálculo e validação para os novos campos
+            const valorBrutoInput = newRow.querySelector('.valor-bruto');
+            const inssInput = newRow.querySelector('.inss');
+            const issqnInput = newRow.querySelector('.issqn');
+            const irrfInput = newRow.querySelector('.irrf');
+            const valorLiquidoInput = newRow.querySelector('.valor-liquido');
+            const inssPatronalInput = newRow.querySelector('.inss-patronal');
+
+            valorBrutoInput.addEventListener('input', () => calcularCampos(valorBrutoInput, inssInput, issqnInput, irrfInput, valorLiquidoInput,inssPatronalInput));
+            issqnInput.addEventListener('input', () => calcularCampos(valorBrutoInput, inssInput, issqnInput, irrfInput, valorLiquidoInput,inssPatronalInput));
+            irrfInput.addEventListener('input', () => calcularCampos(valorBrutoInput, inssInput, issqnInput, irrfInput, valorLiquidoInput,inssPatronalInput));
+
+            // Adiciona validação de CPF e datas para a nova linha
+            const cpfInput = newRow.querySelector('.cpf');
+            const dataNascimentoInput = newRow.querySelector('.data-nascimento');
+            const dataDhInput = newRow.querySelector('.data-dh');
+            const dataObInput = newRow.querySelector('.data-ob');
+
+            cpfInput.addEventListener('input', validarCPF);
+            dataNascimentoInput.addEventListener('input', validarData);
+            dataDhInput.addEventListener('input', validarData);
+            dataObInput.addEventListener('input', validarData);
+        }
+
+  // Função para replicar os dados da primeira linha para as demais
+        function replicarDados() {
+            const primeiraLinha = document.getElementById('first-row');
+            const outrasLinhas = document.querySelectorAll('.form-row:not(#first-row)');
+
+            // Campos que serão replicados
+ 	   const camposReplicados = [
+	        { selector: '.ug-ifmg' }, // UG IFMG
+	        { selector: '.processo-doc' }, // Processo Doc
+ 	        { selector: '.processo-pag' }, // Processo Pag
+ 	        { selector: '.dh' }, // DH
+ 	        { selector: '.data-dh' }, // Data DH
+ 	        { selector: '.ob' }, // OB
+	        { selector: '.data-ob' }  // Data OB
+    ];
+
+            outrasLinhas.forEach(linha => {
+               camposReplicados.forEach(campo => {
+                   const inputPrimeiraLinha = primeiraLinha.querySelector(campo.selector);
+                   const inputLinhaAtual = linha.querySelector(campo.selector);
+                   if (inputPrimeiraLinha && inputLinhaAtual) {
+                   inputLinhaAtual.value = inputPrimeiraLinha.value;
+            }
+                });
+            });
+
+            alert('Dados replicados com sucesso!');
+        }
+
+        // Função para desfazer a última ação (remover a última linha adicionada)
+        function undoLastRow() {
+            if (rowHistory.length > 0) {
+                const lastRow = rowHistory.pop(); // Remove a última linha do histórico
+                lastRow.remove(); // Remove a linha do DOM
+            } else {
+                alert('Nenhuma linha para desfazer.'); // Mensagem se não houver linhas para desfazer
+            }
+
+            // Verifica se o botão "Replicar Dados" deve ser habilitado
+            verificarCamposPrimeiraLinha();
+        }
+
+        // Função para calcular INSS, Valor Líquido e INSS Patronal
+        function calcularCampos(valorBrutoInput, inssInput, issqnInput, irrfInput, valorLiquidoInput,inssPatronalInput) {
+            const valorBruto = parseFloat(valorBrutoInput.value) || 0;
+            const issqn = parseFloat(issqnInput.value) || 0;
+            const irrf = parseFloat(irrfInput.value) || 0;
+
+            // Calcula o INSS (11% do Valor Bruto, truncado na segunda casa decimal)
+            const inss = Math.floor(valorBruto * 0.11 * 100) / 100;
+            inssInput.value = inss.toFixed(2);
+
+            // Calcula o Valor Líquido (Valor Bruto - INSS - ISSQN - IRRF)
+            const valorLiquido = valorBruto - inss - issqn - irrf;
+            valorLiquidoInput.value = valorLiquido.toFixed(2);
+
+
+            // Calcula o INSS Patronal (20% do Valor Bruto, truncado na segunda casa decimal)
+            const inssPatronal = Math.floor(valorBruto * 0.20 * 100) / 100;
+            inssPatronalInput.value = inssPatronal.toFixed(2);
+        }
+
+        // Função para validar CPF
+        function validarCPF(event) {
+            const cpf = event.target.value.replace(/\D/g, ''); // Remove caracteres não numéricos
+            if (cpf.length !== 11) {
+                event.target.setCustomValidity('O CPF deve ter 11 dígitos.');
+            } else if (!validarDigitosCPF(cpf)) {
+                event.target.setCustomValidity('CPF inválido.');
+            } else {
+                event.target.setCustomValidity('');
+            }
+        }
+
+        // Função para validar os dígitos do CPF
+        function validarDigitosCPF(cpf) {
+            if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false; // Verifica se todos os dígitos são iguais
+            let soma = 0;
+            for (let i = 0; i < 9; i++) {
+                soma += parseInt(cpf.charAt(i)) * (10 - i);
+            }
+            let resto = (soma * 10) % 11;
+            if (resto === 10 || resto === 11) resto = 0;
+            if (resto !== parseInt(cpf.charAt(9))) return false;
+            soma = 0;
+            for (let i = 0; i < 10; i++) {
+                soma += parseInt(cpf.charAt(i)) * (11 - i);
+            }
+            resto = (soma * 10) % 11;
+            if (resto === 10 || resto === 11) resto = 0;
+            if (resto !== parseInt(cpf.charAt(10))) return false;
+            return true;
+        }
+
+        // Função para validar datas
+        function validarData(event) {
+            const input = event.target;
+            const data = new Date(input.value);
+            if (isNaN(data.getTime())) {
+                input.setCustomValidity('Data inválida.');
+            } else {
+                input.setCustomValidity('');
+            }
+        }
+
+        // Adiciona os eventos de cálculo para a primeira linha
+        const valorBrutoInput = document.querySelector('#first-row .valor-bruto');
+        const inssInput = document.querySelector('#first-row .inss');
+        const issqnInput = document.querySelector('#first-row .issqn');
+        const irrfInput = document.querySelector('#first-row .irrf');
+        const valorLiquidoInput = document.querySelector('#first-row .valor-liquido');
+        const inssPatronalInput = document.querySelector('#first-row .inss-patronal');
+
+        valorBrutoInput.addEventListener('input', () => calcularCampos(valorBrutoInput, inssInput, issqnInput, irrfInput, valorLiquidoInput, inssPatronalInput));
+        issqnInput.addEventListener('input', () => calcularCampos(valorBrutoInput, inssInput, issqnInput, irrfInput, valorLiquidoInput, inssPatronalInput));
+        irrfInput.addEventListener('input', () => calcularCampos(valorBrutoInput, inssInput, issqnInput, irrfInput, valorLiquidoInput, inssPatronalInput));
+
+        // Adiciona validação de CPF e datas para a primeira linha
+        const cpfInput = document.querySelector('#first-row .cpf');
+        const dataNascimentoInput = document.querySelector('#first-row .data-nascimento');
+        const dataDhInput = document.querySelector('#first-row .data-dh');
+        const dataObInput = document.querySelector('#first-row .data-ob');
+
+        cpfInput.addEventListener('input', validarCPF);
+        dataNascimentoInput.addEventListener('input', validarData);
+        dataDhInput.addEventListener('input', validarData);
+        dataObInput.addEventListener('input', validarData);
+
+        // Função para salvar os dados na planilha Excel
+        function saveToExcel(data) {
+            // Verifica se já existe uma planilha no localStorage
+            let workbook;
+            const storedWorkbook = localStorage.getItem('DadoseSocial');
+            if (storedWorkbook) {
+                // Se existir, carrega a planilha existente
+                const arrayBuffer = Uint8Array.from(atob(storedWorkbook), c => c.charCodeAt(0)).buffer;
+                workbook = XLSX.read(arrayBuffer, { type: 'array' });
+            } else {
+                // Se não existir, cria uma nova planilha
+                workbook = XLSX.utils.book_new();
+            }
+
+            // Cria uma nova planilha com os dados atuais
+            const worksheet = XLSX.utils.json_to_sheet(data);
+
+            // Adiciona a nova planilha ao workbook
+            if (workbook.Sheets['Dados']) {
+                // Se a planilha "Dados" já existir, adiciona os novos dados
+                XLSX.utils.sheet_add_json(workbook.Sheets['Dados'], data, { skipHeader: true, origin: -1 });
+            } else {
+                // Se não existir, cria uma nova planilha "Dados"
+                XLSX.utils.book_append_sheet(workbook, worksheet, 'Dados');
+            }
+
+            // Salva o workbook no localStorage
+            const workbookOutput = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
+            localStorage.setItem('DadoseSocial', workbookOutput);
+
+            // Faz o download da planilha atualizada
+            XLSX.writeFile(workbook, 'DadoseSocial.xlsx');
+        }
+
+        // Função para coletar dados do formulário
+        document.getElementById('data-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const rows = document.querySelectorAll('.form-row');
+            const data = [];
+
+            rows.forEach(row => {
+                const inputs = row.querySelectorAll('input, select');
+                const rowData = {
+                    UG_IFMG: inputs[0].value,
+                    Contribuinte_IFMG: inputs[1].value,
+                    Contribuinte_MEI: inputs[2].value,
+                    CPF: inputs[3].value,
+                    Nome_Completo: inputs[4].value,
+                    Data_Nascimento: inputs[5].value,
+                    CBO: inputs[6].value,
+                    Valor_Bruto: inputs[7].value,
+                    INSS: inputs[8].value,
+                    ISSQN: inputs[9].value,
+                    IRRF: inputs[10].value,
+                    Valor_Liquido: inputs[11].value,
+                    INSS_Patronal: inputs[12].value,
+                    Processo_Doc: inputs[13].value,
+                    Processo_Pag: inputs[14].value,
+                    DH: inputs[15].value,
+                    Data_DH: inputs[16].value,
+                    OB: inputs[17].value,
+                    Data_OB: inputs[18].value,
+                    CNPJ_Empresa: inputs[19].value,
+                    Valor_Remuneracao: inputs[20].value,
+                    CBO2: inputs[21].value,
+                    CNPJ_Empresa2: inputs[22].value,
+                    Valor_Remuneracao2: inputs[23].value,
+                    CBO3: inputs[24].value,
+                    CNPJ_Empresa3: inputs[24].value,
+                    Valor_Remuneracao3: inputs[26].value,
+                    CBO4: inputs[27].value
+                };
+                data.push(rowData);
+            });
+
+            // Salva os dados na planilha Excel
+            saveToExcel(data);
+
+            console.log(data); // Exibir dados no console
+            alert('Dados salvos na planilha DadoseSocial.xlsx!');
+        });
+    </script>
+</body>
+</html>
