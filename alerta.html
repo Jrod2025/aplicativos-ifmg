@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALERTA GEROP - PAGAMENTOS</title>
+    <style>
+        /* Estilo visual focado em Urgência (padrão Defesa Civil) */
+        body { 
+            margin: 0; 
+            font-family: 'Arial', sans-serif; 
+            background-color: #222; 
+            color: white; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            overflow: hidden;
+        }
+
+        #container-inicial { text-align: center; padding: 20px; }
+        
+        /* Botão de ativação para burlar o bloqueio de som do navegador */
+        .btn-ativar {
+            background-color: #ff9800;
+            border: none;
+            color: white;
+            padding: 20px 40px;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(255, 152, 0, 0.5);
+        }
+
+        #alerta-urgente {
+            display: none; /* Escondido até o clique */
+            width: 100%;
+            height: 100%;
+            background-color: #b71c1c; /* Vermelho Alerta */
+            text-align: center;
+            padding-top: 10vh;
+            animation: piscar 0.5s infinite;
+        }
+
+        .texto-alerta {
+            font-size: 2.5rem;
+            font-weight: black;
+            padding: 20px;
+            text-transform: uppercase;
+        }
+
+        @keyframes piscar {
+            0% { background-color: #b71c1c; }
+            50% { background-color: #ff0000; }
+            100% { background-color: #b71c1c; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="container-inicial">
+        <h1>⚠️ Notificação Recebida</h1>
+        <p>Clique no botão abaixo para visualizar o comando:</p>
+        <button class="btn-ativar" onclick="dispararAlerta()">ABRIR ALERTA GEROP</button>
+    </div>
+
+    <div id="alerta-urgente">
+        <div style="font-size: 80px;">📢</div>
+        <div class="texto-alerta">
+            GENTILEZA REALIZAR O COMANDO GEROP PARA A EXECUÇÃO DOS PAGAMENTOS REALIZADOS!
+        </div>
+        <button onclick="localCiente()" style="margin-top: 40px; padding: 10px 20px;">CONFIRMAR RECEBIMENTO</button>
+    </div>
+
+    <audio id="somAlerta" loop>
+        <source src="https://noproblo.dayjo.org/ZeldaSounds/WW/WW_Fanfare_SmallItem.wav" type="audio/wav">
+    </audio>
+
+    <script>
+        const som = document.getElementById('somAlerta');
+        const telaInicial = document.getElementById('container-inicial');
+        const telaAlerta = document.getElementById('alerta-urgente');
+
+        function dispararAlerta() {
+            // Esconde o botão e mostra o alerta
+            telaInicial.style.display = 'none';
+            telaAlerta.style.display = 'block';
+            
+            // Toca o som (agora o navegador permite pois houve um clique)
+            som.play().catch(e => console.log("Erro ao tocar som:", e));
+        }
+
+        function localCiente() {
+            som.pause();
+            alert("Ciente registrado. Por favor, proceda com o comando no sistema financeiro.");
+            window.close(); // Tenta fechar a aba (funciona em alguns navegadores)
+        </div>
+    </script>
+</body>
+</html>
